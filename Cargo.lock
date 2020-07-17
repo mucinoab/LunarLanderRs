@@ -257,17 +257,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cgmath"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "283944cdecc44bf0b8dd010ec9af888d3b4f142844fdbe026c20ef68148d6fe7"
-dependencies = [
- "approx",
- "num-traits 0.2.12",
- "rand 0.6.5",
-]
-
-[[package]]
 name = "clang-sys"
 version = "0.29.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -555,16 +544,6 @@ name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
-
-[[package]]
-name = "game2"
-version = "0.1.0"
-dependencies = [
- "cgmath",
- "ggez",
- "rand 0.7.3",
- "simdnoise",
-]
 
 [[package]]
 name = "generic-array"
@@ -1027,6 +1006,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fabed175da42fed1fa0746b0ea71f412aa9d35e76e95e59b192c64b9dc2bf8b"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "lunar_lander"
+version = "0.1.0"
+dependencies = [
+ "ggez",
+ "rand 0.7.3",
+ "simdnoise",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "game2"
+name = "lunar_lander"
 version = "0.1.0"
 authors = ["Bruno Muciño <mucinoab@gmail.com>"]
 edition = "2018"
@@ -9,5 +9,4 @@ edition = "2018"
 [dependencies]
 ggez = "0.5.1"
 rand = "0.7.3"
-cgmath = "0.17.0"
 simdnoise = "3.1.6"
