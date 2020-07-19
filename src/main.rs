@@ -1,5 +1,10 @@
 use std::f32::consts::PI;
 
+const THRUST: f32 = 15.0;
+const MAX_PHYSICS_VEL: f32 = 100.0;
+const GRAVITY: f32 = 0.05;
+const PLAYER_TURN_RATE: f32 = 2.0;
+
 use ggez::{
     //conf,
     event::{self, EventHandler, KeyCode, KeyMods},
@@ -10,6 +15,7 @@ use ggez::{
     Context,
     GameResult,
 };
+
 use ncollide2d::{nalgebra as nac, shape};
 use rand::prelude::*;
 use simdnoise::NoiseBuilder;
@@ -50,6 +56,8 @@ struct Ship {
     velocity: Vector2,
     _bbox_size: f32,
     sprite: graphics::Mesh,
+    flame: graphics::Mesh,
+    thrust: bool,
     armor: shape::Polyline<f32>,
 }
 
@@ -60,10 +68,9 @@ impl Ship {
         Ship {
             pos: point,
             facing: PI,
-            velocity: na::zero(),
+            velocity: Vector2::new(15.0, 1.01),
             _bbox_size: 12.0,
             armor: shape::Polyline::new(
-                //TODO areglar
                 vec![
                     ncollide2d::nalgebra::Point2::new(0.0, 10.0),
                     ncollide2d::nalgebra::Point2::new(-10.0, -10.0),
@@ -73,6 +80,22 @@ impl Ship {
                 ],
                 None,
             ),
+            flame: graphics::Mesh::new_polyline(
+                ctx,
+                graphics::DrawMode::stroke(2.0),
+                &[
+                    Point2::new(0.0, -5.0),
+                    Point2::new(-2.0, -6.0),
+                    Point2::new(0.0, -10.0),
+                    Point2::new(2.0, -6.0),
+                    Point2::new(0.0, -5.0),
+                ],
+                graphics::Color::from_rgb(222, 3, 64),
+            )
+            .unwrap(),
+
+            thrust: false,
+
             sprite: graphics::Mesh::new_polyline(
                 ctx,
                 graphics::DrawMode::stroke(2.0),
@@ -95,6 +118,11 @@ fn draw_ship(ship: &Ship, ctx: &mut Context) -> GameResult {
         .dest(ship.pos)
         .rotation(-ship.facing)
         .offset(Point2::new(0.5, 0.5));
+
+    if ship.thrust {
+        graphics::draw(ctx, &ship.flame, drawparams)?;
+    }
+
     graphics::draw(ctx, &ship.sprite, drawparams)
 }
 
@@ -105,44 +133,26 @@ fn vec_from_angle(angle: f32) -> Vector2 {
 }
 
 fn player_thrust(actor: &mut Ship, dt: f32) {
-    let thrust: f32 = 500.0;
     let direction_vector = vec_from_angle(actor.facing);
-    let thrust_vector = direction_vector * thrust;
+    let thrust_vector = direction_vector * THRUST;
     actor.velocity += thrust_vector * (dt);
 }
 
 fn update_actor_position(actor: &mut Ship, dt: f32) {
-    const MAX_PHYSICS_VEL: f32 = 1000.0;
     let norm_sq = actor.velocity.norm_squared();
     if norm_sq > MAX_PHYSICS_VEL.powi(2) {
         actor.velocity = actor.velocity / norm_sq.sqrt() * MAX_PHYSICS_VEL;
     }
     let dv = actor.velocity * (dt);
     actor.pos += dv;
+    actor.velocity.y += GRAVITY;
 }
 
 fn player_handle_input(actor: &mut Ship, input: &InputState, dt: f32) {
-    const PLAYER_TURN_RATE: f32 = 3.0;
     actor.facing += dt * PLAYER_TURN_RATE * input.xaxis;
 
     if input.yaxis > 0.0 {
         player_thrust(actor, dt);
-    }
-}
-
-fn collisions(ship: &Ship, mountain: &shape::Polyline<f32>) -> bool {
-    let m = nac::Isometry2::new(nac::Vector2::new(100.0, 100.0), nac::zero());
-    let s = nac::Isometry2::new(nac::Vector2::new(ship.pos.x, ship.pos.y), 1.0);
-
-    let n = match ncollide2d::query::contact(&m, mountain, &s, &ship.armor, 1.0) {
-        Some(n) => n.depth,
-        _ => 0.0,
-    };
-
-    if n >= 0.0 {
-        true
-    } else {
-        false
     }
 }
 
@@ -169,18 +179,7 @@ impl EventHandler for MainState {
         while timer::check_update_time(ctx, DESIRED_FPS) {
             player_handle_input(&mut self.ship, &self.input, seconds);
             update_actor_position(&mut self.ship, seconds);
-
-            if self.ship.pos.x > sx {
-                self.ship.pos.x = 0.0;
-            } else if self.ship.pos.x < 0.0 {
-                self.ship.pos.x = sx;
-            }
-
-            if self.ship.pos.y < 0.0 {
-                self.ship.pos.y = sy;
-            } else if self.ship.pos.y > sy {
-                self.ship.pos.y = 0.0;
-            }
+            bounds(&mut self.ship, sx, sy);
         }
         Ok(())
     }
@@ -198,14 +197,15 @@ impl EventHandler for MainState {
             ctx,
             &graphics::Text::new((
                 format!(
-                    "FPS{:.0}\nPos({:.0},{:.0})\nFacing{:.4}\nVel({:.2},{:.2}\nCol{})",
+                    "FPS{:.0}\nPos({:.0},{:.0})\nFacing{:.4}\nVel({:.2},{:.2})\nCol{})",
                     timer::fps(ctx),
                     self.ship.pos.x,
                     self.ship.pos.x,
                     self.ship.facing % (2.0 * PI),
                     self.ship.velocity.x,
                     self.ship.velocity.y,
-                    collisions(&self.ship, &self._mountain),
+                    self.ship.thrust,
+                    //collisions(&self.ship, &self._mountain),
                 ),
                 self.font,
                 15.0,
@@ -228,6 +228,7 @@ impl EventHandler for MainState {
         match keycode {
             KeyCode::Up | KeyCode::K => {
                 self.input.yaxis = 1.0;
+                self.ship.thrust = true;
             }
 
             KeyCode::Left | KeyCode::H => {
@@ -252,6 +253,7 @@ impl EventHandler for MainState {
         match keycode {
             KeyCode::Up | KeyCode::K => {
                 self.input.yaxis = 0.0;
+                self.ship.thrust = false;
             }
 
             KeyCode::Left | KeyCode::Right | KeyCode::L | KeyCode::H => {
@@ -335,12 +337,37 @@ fn build_mountain(ctx: &mut Context) -> (graphics::Mesh, shape::Polyline<f32>) {
     )
 }
 
+fn bounds(ship: &mut Ship, sx: f32, sy: f32) {
+    if ship.pos.x > sx {
+        ship.pos.x = 0.0;
+    } else if ship.pos.x < 0.0 {
+        ship.pos.x = sx;
+    }
+
+    if ship.pos.y < 0.0 {
+        ship.pos.y = sy;
+    } else if ship.pos.y > sy {
+        ship.pos.y = 0.0;
+    }
+}
+
+fn _collisions(ship: &Ship, mountain: &shape::Polyline<f32>) -> bool {
+    let m = nac::Isometry2::new(nac::Vector2::new(100.0, 100.0), nac::zero());
+    let s = nac::Isometry2::new(nac::Vector2::new(ship.pos.x, ship.pos.y), 1.0);
+
+    let n = match ncollide2d::query::contact(&m, mountain, &s, &ship.armor, 1.0) {
+        Some(n) => n.depth,
+        _ => 0.0,
+    };
+
+    if n >= 0.0 {
+        true
+    } else {
+        false
+    }
+}
+
 //TODO
 //Particulas?
 //Colisiones, nave, linea
-//movimiento
 //numero de samples
-//
-//
-//
-//
