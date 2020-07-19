@@ -2,18 +2,15 @@ use std::f32::consts::PI;
 
 const THRUST: f32 = 15.0;
 const MAX_PHYSICS_VEL: f32 = 100.0;
-const GRAVITY: f32 = 0.05;
-const PLAYER_TURN_RATE: f32 = 2.0;
+const GRAVITY: f32 = 0.1;
+const PLAYER_TURN_RATE: f32 = 1.0;
 
 use ggez::{
-    //conf,
+    conf,
     event::{self, EventHandler, KeyCode, KeyMods},
     graphics,
     graphics::DrawParam,
-    nalgebra as na,
-    timer,
-    Context,
-    GameResult,
+    nalgebra as na, timer, Context, GameResult,
 };
 
 use ncollide2d::{nalgebra as nac, shape};
@@ -55,10 +52,9 @@ struct Ship {
     facing: f32,
     velocity: Vector2,
     _bbox_size: f32,
-    sprite: graphics::Mesh,
-    flame: graphics::Mesh,
+    sprites: [graphics::Mesh; 4],
     thrust: bool,
-    armor: shape::Polyline<f32>,
+    _armor: shape::Polyline<f32>,
 }
 
 impl Ship {
@@ -68,9 +64,9 @@ impl Ship {
         Ship {
             pos: point,
             facing: PI,
-            velocity: Vector2::new(15.0, 1.01),
+            velocity: Vector2::new(55.0, 20.0),
             _bbox_size: 12.0,
-            armor: shape::Polyline::new(
+            _armor: shape::Polyline::new(
                 vec![
                     ncollide2d::nalgebra::Point2::new(0.0, 10.0),
                     ncollide2d::nalgebra::Point2::new(-10.0, -10.0),
@@ -80,50 +76,80 @@ impl Ship {
                 ],
                 None,
             ),
-            flame: graphics::Mesh::new_polyline(
-                ctx,
-                graphics::DrawMode::stroke(2.0),
-                &[
-                    Point2::new(0.0, -5.0),
-                    Point2::new(-2.0, -6.0),
-                    Point2::new(0.0, -10.0),
-                    Point2::new(2.0, -6.0),
-                    Point2::new(0.0, -5.0),
-                ],
-                graphics::Color::from_rgb(222, 3, 64),
-            )
-            .unwrap(),
+            sprites: [
+                graphics::Mesh::new_polyline(
+                    ctx, //red big flame
+                    graphics::DrawMode::stroke(0.5),
+                    &[
+                        Point2::new(0.0, -5.0),
+                        Point2::new(-2.0, -6.0),
+                        Point2::new(0.0, -10.0),
+                        Point2::new(2.0, -6.0),
+                        Point2::new(0.0, -5.0),
+                    ],
+                    graphics::Color::from_rgb(222, 3, 64),
+                )
+                .unwrap(),
+                graphics::Mesh::new_polyline(
+                    ctx, //orange middle flame
+                    graphics::DrawMode::fill(),
+                    &[
+                        Point2::new(0.0, -5.0),
+                        Point2::new(-2.0, -6.0),
+                        Point2::new(0.0, -9.5),
+                        Point2::new(2.0, -6.0),
+                        Point2::new(0.0, -5.0),
+                    ],
+                    graphics::Color::from_rgb(255, 165, 0),
+                )
+                .unwrap(),
+                graphics::Mesh::new_polyline(
+                    ctx, // blue little flame
+                    graphics::DrawMode::fill(),
+                    &[
+                        Point2::new(0.0, -5.0),
+                        Point2::new(-0.5, -5.25),
+                        Point2::new(0.0, -7.5),
+                        Point2::new(0.5, -5.25),
+                        Point2::new(0.0, -5.0),
+                    ],
+                    graphics::Color::from_rgb(26, 26, 255),
+                )
+                .unwrap(),
+                graphics::Mesh::new_polyline(
+                    ctx, //ship
+                    graphics::DrawMode::fill(),
+                    &[
+                        Point2::new(0.0, 10.0),
+                        Point2::new(-10.0, -10.0),
+                        Point2::new(0.0, -5.0),
+                        Point2::new(10.0, -10.0),
+                        Point2::new(0.0, 10.0),
+                    ],
+                    graphics::WHITE,
+                )
+                .unwrap(),
+            ],
 
             thrust: false,
-
-            sprite: graphics::Mesh::new_polyline(
-                ctx,
-                graphics::DrawMode::stroke(2.0),
-                &[
-                    Point2::new(0.0, 10.0),
-                    Point2::new(-10.0, -10.0),
-                    Point2::new(0.0, -5.0),
-                    Point2::new(10.0, -10.0),
-                    Point2::new(0.0, 10.0),
-                ],
-                graphics::WHITE,
-            )
-            .unwrap(),
         }
     }
-}
 
-fn draw_ship(ship: &Ship, ctx: &mut Context) -> GameResult {
-    let drawparams = graphics::DrawParam::new()
-        .dest(ship.pos)
-        .rotation(-ship.facing)
-        .offset(Point2::new(0.5, 0.5));
+    fn draw(&self, ctx: &mut Context) -> GameResult {
+        let drawparams = graphics::DrawParam::new()
+            .dest(self.pos)
+            .rotation(-self.facing)
+            .scale([2.0, 2.0])
+            .offset(Point2::new(0.5, 0.5));
 
-    if ship.thrust {
-        graphics::draw(ctx, &ship.flame, drawparams)?;
+        if self.thrust {
+            for x in 0..3 {
+                graphics::draw(ctx, &self.sprites[x], drawparams)?;
+            }
+        }
+
+        graphics::draw(ctx, &self.sprites[3], drawparams)
     }
-
-    graphics::draw(ctx, &ship.sprite, drawparams)
 }
 
 fn vec_from_angle(angle: f32) -> Vector2 {
@@ -172,8 +198,8 @@ impl Default for InputState {
 
 impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        const DESIRED_FPS: u32 = 60;
         let (sx, sy) = graphics::size(ctx);
+        const DESIRED_FPS: u32 = 60;
         let seconds = 1.0 / (DESIRED_FPS as f32);
 
         while timer::check_update_time(ctx, DESIRED_FPS) {
@@ -191,21 +217,15 @@ impl EventHandler for MainState {
             graphics::draw(ctx, m, DrawParam::default())?;
         }
 
-        draw_ship(&self.ship, ctx)?;
+        self.ship.draw(ctx)?;
 
         graphics::draw(
             ctx,
             &graphics::Text::new((
                 format!(
-                    "FPS{:.0}\nPos({:.0},{:.0})\nFacing{:.4}\nVel({:.2},{:.2})\nCol{})",
-                    timer::fps(ctx),
-                    self.ship.pos.x,
-                    self.ship.pos.x,
-                    self.ship.facing % (2.0 * PI),
-                    self.ship.velocity.x,
-                    self.ship.velocity.y,
-                    self.ship.thrust,
-                    //collisions(&self.ship, &self._mountain),
+                    "\nHORIZONTAL SPEED   {:.0}\
+                     \nVERTICAL SPEED     {:.0}",
+                    self.ship.velocity.x, self.ship.velocity.y,
                 ),
                 self.font,
                 15.0,
@@ -272,7 +292,7 @@ pub fn main() -> GameResult {
     //                 .resizable(true)
     //                 .maximized(true)
     //                 .borderless(true)
-    //                 .dimensions(2560.0, 1440.0),
+    //                 .dimensions(1920.0, 1080.0),
     //         )
     //         .backend(conf::Backend::default().version(4, 6).gl());
     //.window_setup(conf::WindowSetup::default().samples(conf::NumSamples::from_u32(16).unwrap()))
@@ -317,9 +337,10 @@ fn build_mountain(ctx: &mut Context) -> (graphics::Mesh, shape::Polyline<f32>) {
 
     let noise = NoiseBuilder::gradient_1d(max_x as _)
         .with_seed(rand::random::<i32>())
+        .with_freq(0.01)
         .generate_scaled(min_y, max_y);
 
-    for x in (0..max_x as usize).step_by(15) {
+    for x in (0..max_x as usize).step_by(1) {
         points_mesh.push([x as f32, noise[x]]);
         points_geometry.push(ncollide2d::nalgebra::Point2::new(x as f32, noise[x]));
     }
@@ -355,7 +376,7 @@ fn _collisions(ship: &Ship, mountain: &shape::Polyline<f32>) -> bool {
     let m = nac::Isometry2::new(nac::Vector2::new(100.0, 100.0), nac::zero());
     let s = nac::Isometry2::new(nac::Vector2::new(ship.pos.x, ship.pos.y), 1.0);
 
-    let n = match ncollide2d::query::contact(&m, mountain, &s, &ship.armor, 1.0) {
+    let n = match ncollide2d::query::contact(&m, mountain, &s, &ship._armor, 1.0) {
         Some(n) => n.depth,
         _ => 0.0,
     };
