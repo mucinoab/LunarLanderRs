@@ -1,11 +1,14 @@
 use std::f32::consts::PI;
 
 use ggez::{
-    conf,
+    //conf,
     event::{self, EventHandler, KeyCode, KeyMods},
     graphics,
     graphics::DrawParam,
-    nalgebra as na, timer, Context, GameResult,
+    nalgebra as na,
+    timer,
+    Context,
+    GameResult,
 };
 use ncollide2d::{nalgebra as nac, shape};
 use rand::prelude::*;
@@ -60,6 +63,7 @@ impl Ship {
             velocity: na::zero(),
             _bbox_size: 12.0,
             armor: shape::Polyline::new(
+                //TODO areglar
                 vec![
                     ncollide2d::nalgebra::Point2::new(0.0, 10.0),
                     ncollide2d::nalgebra::Point2::new(-10.0, -10.0),
@@ -89,7 +93,7 @@ impl Ship {
 fn draw_ship(ship: &Ship, ctx: &mut Context) -> GameResult {
     let drawparams = graphics::DrawParam::new()
         .dest(ship.pos)
-        .rotation(ship.facing)
+        .rotation(-ship.facing)
         .offset(Point2::new(0.5, 0.5));
     graphics::draw(ctx, &ship.sprite, drawparams)
 }
@@ -108,7 +112,7 @@ fn player_thrust(actor: &mut Ship, dt: f32) {
 }
 
 fn update_actor_position(actor: &mut Ship, dt: f32) {
-    const MAX_PHYSICS_VEL: f32 = 500.0;
+    const MAX_PHYSICS_VEL: f32 = 1000.0;
     let norm_sq = actor.velocity.norm_squared();
     if norm_sq > MAX_PHYSICS_VEL.powi(2) {
         actor.velocity = actor.velocity / norm_sq.sqrt() * MAX_PHYSICS_VEL;
@@ -118,13 +122,11 @@ fn update_actor_position(actor: &mut Ship, dt: f32) {
 }
 
 fn player_handle_input(actor: &mut Ship, input: &InputState, dt: f32) {
-    const PLAYER_TURN_RATE: f32 = 1.0;
+    const PLAYER_TURN_RATE: f32 = 3.0;
     actor.facing += dt * PLAYER_TURN_RATE * input.xaxis;
 
-    if input.yaxis == 1.0 {
+    if input.yaxis > 0.0 {
         player_thrust(actor, dt);
-    } else if input.yaxis == -1.0 {
-        player_thrust(actor, -dt);
     }
 }
 
@@ -224,20 +226,16 @@ impl EventHandler for MainState {
         _repeat: bool,
     ) {
         match keycode {
-            KeyCode::Up => {
+            KeyCode::Up | KeyCode::K => {
                 self.input.yaxis = 1.0;
             }
 
-            KeyCode::Down => {
-                self.input.yaxis = -1.0;
-            }
-
-            KeyCode::Left => {
-                self.input.xaxis = 1.0;
-            }
-
-            KeyCode::Right => {
+            KeyCode::Left | KeyCode::H => {
                 self.input.xaxis = -1.0;
+            }
+
+            KeyCode::Right | KeyCode::L => {
+                self.input.xaxis = 1.0;
             }
 
             KeyCode::Space => {
@@ -252,11 +250,11 @@ impl EventHandler for MainState {
 
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymod: KeyMods) {
         match keycode {
-            KeyCode::Up | KeyCode::Down => {
+            KeyCode::Up | KeyCode::K => {
                 self.input.yaxis = 0.0;
             }
 
-            KeyCode::Left | KeyCode::Right => {
+            KeyCode::Left | KeyCode::Right | KeyCode::L | KeyCode::H => {
                 self.input.xaxis = 0.0;
             }
             _ => (),
@@ -265,16 +263,17 @@ impl EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("", "")
-        .window_mode(
-            conf::WindowMode::default()
-                .fullscreen_type(conf::FullscreenType::True)
-                .resizable(true)
-                .borderless(true)
-                .dimensions(1366.0, 768.0),
-        )
-        .window_setup(conf::WindowSetup::default().samples(conf::NumSamples::from_u32(8).unwrap()))
-        .backend(conf::Backend::default().version(4, 6));
+    let cb = ggez::ContextBuilder::new("", "");
+    //         .window_mode(
+    //             conf::WindowMode::default()
+    //                 .fullscreen_type(conf::FullscreenType::True)
+    //                 .resizable(true)
+    //                 .maximized(true)
+    //                 .borderless(true)
+    //                 .dimensions(2560.0, 1440.0),
+    //         )
+    //         .backend(conf::Backend::default().version(4, 6).gl());
+    //.window_setup(conf::WindowSetup::default().samples(conf::NumSamples::from_u32(16).unwrap()))
 
     let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;
@@ -336,8 +335,12 @@ fn build_mountain(ctx: &mut Context) -> (graphics::Mesh, shape::Polyline<f32>) {
     )
 }
 
-//To_Do
+//TODO
 //Particulas?
 //Colisiones, nave, linea
 //movimiento
 //numero de samples
+//
+//
+//
+//
