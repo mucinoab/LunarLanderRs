@@ -1,16 +1,19 @@
 use std::f32::consts::PI;
 
 const THRUST: f32 = 15.0;
-const MAX_PHYSICS_VEL: f32 = 100.0;
+const MAX_PHYSICS_VEL: f32 = 200.0;
 const GRAVITY: f32 = 0.1;
-const PLAYER_TURN_RATE: f32 = 1.0;
+const PLAYER_TURN_RATE: f32 = 1.5;
 
 use ggez::{
-    conf,
+    //conf,
     event::{self, EventHandler, KeyCode, KeyMods},
     graphics,
     graphics::DrawParam,
-    nalgebra as na, timer, Context, GameResult,
+    nalgebra as na,
+    timer,
+    Context,
+    GameResult,
 };
 
 use ncollide2d::{nalgebra as nac, shape};
@@ -68,10 +71,7 @@ impl Ship {
             _bbox_size: 12.0,
             _armor: shape::Polyline::new(
                 vec![
-                    ncollide2d::nalgebra::Point2::new(0.0, 10.0),
-                    ncollide2d::nalgebra::Point2::new(-10.0, -10.0),
-                    ncollide2d::nalgebra::Point2::new(0.0, -5.0),
-                    ncollide2d::nalgebra::Point2::new(10.0, -10.0),
+                    //TODO new shape
                     ncollide2d::nalgebra::Point2::new(0.0, 10.0),
                 ],
                 None,
@@ -81,11 +81,11 @@ impl Ship {
                     ctx, //red big flame
                     graphics::DrawMode::stroke(0.5),
                     &[
-                        Point2::new(0.0, -5.0),
-                        Point2::new(-2.0, -6.0),
-                        Point2::new(0.0, -10.0),
-                        Point2::new(2.0, -6.0),
-                        Point2::new(0.0, -5.0),
+                        Point2::new(0.0, -0.0) * 2.0,
+                        Point2::new(-2.0, -1.0) * 2.0,
+                        Point2::new(0.0, -6.0) * 2.0,
+                        Point2::new(2.0, -1.0) * 2.0,
+                        Point2::new(0.0, -0.0) * 2.0,
                     ],
                     graphics::Color::from_rgb(222, 3, 64),
                 )
@@ -94,11 +94,11 @@ impl Ship {
                     ctx, //orange middle flame
                     graphics::DrawMode::fill(),
                     &[
-                        Point2::new(0.0, -5.0),
-                        Point2::new(-2.0, -6.0),
-                        Point2::new(0.0, -9.5),
-                        Point2::new(2.0, -6.0),
-                        Point2::new(0.0, -5.0),
+                        Point2::new(0.0, -0.0) * 2.0,
+                        Point2::new(-2.0, -1.0) * 2.0,
+                        Point2::new(0.0, -5.5) * 2.0,
+                        Point2::new(2.0, -1.0) * 2.0,
+                        Point2::new(0.0, -0.0) * 2.0,
                     ],
                     graphics::Color::from_rgb(255, 165, 0),
                 )
@@ -107,24 +107,48 @@ impl Ship {
                     ctx, // blue little flame
                     graphics::DrawMode::fill(),
                     &[
-                        Point2::new(0.0, -5.0),
-                        Point2::new(-0.5, -5.25),
-                        Point2::new(0.0, -7.5),
-                        Point2::new(0.5, -5.25),
-                        Point2::new(0.0, -5.0),
+                        Point2::new(0.0, -0.0) * 2.0,
+                        Point2::new(-0.5, -0.25) * 2.0,
+                        Point2::new(0.0, -3.5) * 2.0,
+                        Point2::new(0.5, -0.25) * 2.0,
+                        Point2::new(0.0, -0.0) * 2.0,
                     ],
                     graphics::Color::from_rgb(26, 26, 255),
                 )
                 .unwrap(),
                 graphics::Mesh::new_polyline(
                     ctx, //ship
-                    graphics::DrawMode::fill(),
+                    graphics::DrawMode::stroke(1.0),
                     &[
-                        Point2::new(0.0, 10.0),
-                        Point2::new(-10.0, -10.0),
-                        Point2::new(0.0, -5.0),
-                        Point2::new(10.0, -10.0),
-                        Point2::new(0.0, 10.0),
+                        Point2::new(18.0, -5.0),
+                        Point2::new(22.0, -5.0),
+                        Point2::new(20.0, -5.0),
+                        Point2::new(15.0, 8.2),
+                        Point2::new(10.0, 10.0),
+                        Point2::new(10.0, 0.0),
+                        Point2::new(15.0, 8.2),
+                        Point2::new(10.0, 10.0),
+                        Point2::new(5.0, 10.0),
+                        Point2::new(7.0, 14.0),
+                        Point2::new(7.0, 23.0),
+                        Point2::new(-5.0, 23.0),
+                        Point2::new(-5.0, 20.0),
+                        Point2::new(-8.1, 17.1),
+                        Point2::new(-8.1, 13.0),
+                        Point2::new(-5.0, 13.0),
+                        Point2::new(-5.0, 10.0),
+                        Point2::new(-10.0, 10.0),
+                        Point2::new(-15.0, 8.2),
+                        Point2::new(-20.0, -5.0),
+                        Point2::new(-22.0, -5.0),
+                        Point2::new(-18.0, -5.0),
+                        Point2::new(-20.0, -5.0),
+                        Point2::new(-15.0, 8.2),
+                        Point2::new(-10.0, 0.0),
+                        Point2::new(-10.0, 10.0),
+                        Point2::new(-10.0, 0.0),
+                        Point2::new(10.0, 0.0),
+                        Point2::new(10.0, 10.0),
                     ],
                     graphics::WHITE,
                 )
@@ -139,7 +163,6 @@ impl Ship {
         let drawparams = graphics::DrawParam::new()
             .dest(self.pos)
             .rotation(-self.facing)
-            .scale([2.0, 2.0])
             .offset(Point2::new(0.5, 0.5));
 
         if self.thrust {
@@ -340,7 +363,7 @@ fn build_mountain(ctx: &mut Context) -> (graphics::Mesh, shape::Polyline<f32>) {
         .with_freq(0.01)
         .generate_scaled(min_y, max_y);
 
-    for x in (0..max_x as usize).step_by(1) {
+    for x in (0..max_x as usize).step_by(25) {
         points_mesh.push([x as f32, noise[x]]);
         points_geometry.push(ncollide2d::nalgebra::Point2::new(x as f32, noise[x]));
     }
