@@ -1,4 +1,5 @@
 use std::f32::consts::PI;
+use std::path;
 
 const THRUST: f32 = 15.0;
 const MAX_PHYSICS_VEL: f32 = 200.0;
@@ -6,17 +7,14 @@ const GRAVITY: f32 = 0.1;
 const PLAYER_TURN_RATE: f32 = 1.5;
 
 use ggez::{
-    //conf,
+    conf,
     event::{self, EventHandler, KeyCode, KeyMods},
     graphics,
-    graphics::DrawParam,
-    nalgebra as na,
-    timer,
-    Context,
-    GameResult,
+    graphics::{screenshot, DrawParam},
+    nalgebra as na, timer, Context, GameResult,
 };
 
-use ncollide2d::{nalgebra as nac, shape};
+use ncollide2d::{na as nac, shape};
 use rand::prelude::*;
 use simdnoise::NoiseBuilder;
 
@@ -72,7 +70,7 @@ impl Ship {
             _armor: shape::Polyline::new(
                 vec![
                     //TODO new shape
-                    ncollide2d::nalgebra::Point2::new(0.0, 10.0),
+                    ncollide2d::na::Point2::new(0.0, 10.0),
                 ],
                 None,
             ),
@@ -287,7 +285,14 @@ impl EventHandler for MainState {
                 self.ship.velocity.y = 0.0;
             }
 
-            KeyCode::Escape => event::quit(ctx),
+            KeyCode::Escape => {
+                let path = path::Path::new("/ss.png");
+                screenshot(ctx)
+                    .unwrap()
+                    .encode(ctx, graphics::ImageFormat::Png, path)
+                    .unwrap();
+                event::quit(ctx)
+            }
             _ => (),
         }
     }
@@ -308,17 +313,17 @@ impl EventHandler for MainState {
 }
 
 pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("", "");
-    //         .window_mode(
-    //             conf::WindowMode::default()
-    //                 .fullscreen_type(conf::FullscreenType::True)
-    //                 .resizable(true)
-    //                 .maximized(true)
-    //                 .borderless(true)
-    //                 .dimensions(1920.0, 1080.0),
-    //         )
-    //         .backend(conf::Backend::default().version(4, 6).gl());
-    //.window_setup(conf::WindowSetup::default().samples(conf::NumSamples::from_u32(16).unwrap()))
+    let cb = ggez::ContextBuilder::new("", "")
+        .window_mode(
+            conf::WindowMode::default()
+                .fullscreen_type(conf::FullscreenType::True)
+                .resizable(false)
+                .maximized(true)
+                .borderless(true)
+                .dimensions(1366.0, 768.0),
+        )
+        .backend(conf::Backend::default().version(4, 6).gl());
+    //.window_setup(conf::WindowSetup::default().samples(conf::NumSamples::from_u32(8).unwrap()));
 
     let (ctx, event_loop) = &mut cb.build()?;
     let state = &mut MainState::new(ctx)?;
@@ -365,7 +370,7 @@ fn build_mountain(ctx: &mut Context) -> (graphics::Mesh, shape::Polyline<f32>) {
 
     for x in (0..max_x as usize).step_by(25) {
         points_mesh.push([x as f32, noise[x]]);
-        points_geometry.push(ncollide2d::nalgebra::Point2::new(x as f32, noise[x]));
+        points_geometry.push(ncollide2d::na::Point2::new(x as f32, noise[x]));
     }
 
     mb.polyline(
