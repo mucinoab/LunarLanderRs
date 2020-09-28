@@ -1252,9 +1252,9 @@ dependencies = [
 
 [[package]]
 name = "ncollide2d"
-version = "0.24.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "483657de63b2b9064e66165eaeb490b782086ac63b6858295a076b21c2fa5cf8"
+checksum = "5be6e3cc3218cd070837e17d08b3d9cd4786d95bf20a37eaa96b5e5f492f7bbe"
 dependencies = [
  "approx",
  "bitflags",
