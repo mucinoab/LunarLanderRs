@@ -1240,7 +1240,7 @@ version = "0.1.0"
 dependencies = [
  "ggez",
  "ncollide2d",
- "rand 0.8.2",
+ "rand 0.8.5",
  "simdnoise",
 ]
 
@@ -1997,14 +1997,13 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.8.2"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18519b42a40024d661e1714153e9ad0c3de27cd495760ceb09710920f1098b1e"
+checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
 dependencies = [
  "libc",
  "rand_chacha",
  "rand_core 0.6.0",
- "rand_hc",
 ]
 
 [[package]]
@@ -2039,15 +2038,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8b34ba8cfb21243bd8df91854c830ff0d785fff2e82ebd4434c2644cb9ada18"
 dependencies = [
  "getrandom",
-]
-
-[[package]]
-name = "rand_hc"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3190ef7066a446f2e7f42e239d161e905420ccab01eb967c9eb27d21b2322a73"
-dependencies = [
- "rand_core 0.6.0",
 ]
 
 [[package]]
@@ -2581,8 +2571,8 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 0.1.10",
- "rand 0.8.2",
+ "cfg-if 1.0.0",
+ "rand 0.4.6",
  "static_assertions",
 ]
 
